@@ -2,68 +2,88 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  agents: defineTable({
-    name: v.string(),
-    role: v.string(),
-    status: v.union(v.literal("idle"), v.literal("active"), v.literal("blocked")),
-    currentTaskId: v.optional(v.id("tasks")),
-    sessionKey: v.string(),
-  }).index("by_sessionKey", ["sessionKey"])
-    .index("by_status", ["status"]),
-
-  tasks: defineTable({
-    title: v.string(),
-    description: v.string(),
-    status: v.union(
-      v.literal("inbox"),
-      v.literal("assigned"),
-      v.literal("in_progress"),
-      v.literal("review"),
-      v.literal("done")
-    ),
-    assigneeIds: v.array(v.id("agents")),
-  }).index("by_status", ["status"]),
-
-  messages: defineTable({
-    taskId: v.id("tasks"),
-    fromAgentId: v.id("agents"),
-    content: v.string(),
-    attachments: v.array(v.id("documents")),
-  }).index("by_taskId", ["taskId"]),
-
   activities: defineTable({
     type: v.union(
       v.literal("task_created"),
-      v.literal("task_assigned"),
-      v.literal("task_status_changed"),
-      v.literal("message_sent"),
-      v.literal("document_created"),
-      v.literal("agent_status_changed"),
-      v.literal("notification_sent")
+      v.literal("task_completed"),
+      v.literal("event_created"),
+      v.literal("content_published"),
+      v.literal("contact_added"),
+      v.literal("system_observation"),
     ),
-    agentId: v.id("agents"),
     message: v.string(),
-    taskId: v.optional(v.id("tasks")),
-  }),
+    actor: v.string(),
+    entityId: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_type", ["type"])
+    .index("by_actor", ["actor"]),
 
-  documents: defineTable({
+  calendarEvents: defineTable({
     title: v.string(),
-    content: v.string(),
-    type: v.union(
-      v.literal("deliverable"),
-      v.literal("research"),
-      v.literal("protocol"),
-      v.literal("note"),
-      v.literal("other")
-    ),
-    taskId: v.optional(v.id("tasks")),
-    agentId: v.optional(v.id("agents")),
-  }).index("by_taskId", ["taskId"]),
+    description: v.optional(v.string()),
+    startTime: v.number(),
+    endTime: v.number(),
+    type: v.union(v.literal("ops"), v.literal("client"), v.literal("content"), v.literal("personal")),
+    color: v.string(),
+    createdBy: v.string(),
+  })
+    .index("by_start_time", ["startTime"])
+    .index("by_type", ["type"]),
 
-  notifications: defineTable({
-    mentionedAgentId: v.id("agents"),
-    content: v.string(),
-    delivered: v.boolean(),
-    taskId: v.optional(v.id("tasks")),
-  }).index("by_agent_undelivered", ["mentionedAgentId", "delivered"]),
+  tasks: defineTable({
+    title: v.string(),
+    category: v.union(
+      v.literal("Revenue"),
+      v.literal("Product"),
+      v.literal("Community"),
+      v.literal("Content"),
+      v.literal("Operations"),
+      v.literal("Clients"),
+      v.literal("Trading"),
+      v.literal("Brand"),
+    ),
+    status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected"), v.literal("in_progress"), v.literal("done")),
+    priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    effort: v.union(v.literal("S"), v.literal("M"), v.literal("L")),
+    reasoning: v.string(),
+    nextAction: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_category", ["category"]),
+
+  contacts: defineTable({
+    name: v.string(),
+    company: v.optional(v.string()),
+    status: v.union(v.literal("Prospect"), v.literal("Contacted"), v.literal("Meeting"), v.literal("Proposal"), v.literal("Active")),
+    contacts: v.array(v.string()),
+    lastInteraction: v.string(),
+    nextAction: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_company", ["company"]),
+
+  contentDrafts: defineTable({
+    title: v.string(),
+    platformTarget: v.string(),
+    draftText: v.string(),
+    status: v.union(v.literal("draft"), v.literal("review"), v.literal("approved"), v.literal("published")),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_platform", ["platformTarget"]),
+
+  ecosystemProducts: defineTable({
+    slug: v.string(),
+    name: v.string(),
+    status: v.union(v.literal("Active"), v.literal("Development"), v.literal("Concept")),
+    health: v.union(v.literal("good"), v.literal("watch"), v.literal("risk")),
+    metrics: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status", ["status"]),
 });
